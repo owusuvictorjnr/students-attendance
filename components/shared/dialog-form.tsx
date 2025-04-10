@@ -23,6 +23,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { Eye, EyeOff } from 'lucide-react'
 
 const schema = z.object({
   email: z.string().email({ message: 'Enter a valid email' }),
@@ -32,7 +33,7 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>
 
 export function AdminAuthDialog() {
-  const [mode, setMode] = useState<'login' | 'signup'>('login')
+  const [mode, setMode] = useState<'login' | 'sign-up'>('login')
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -41,6 +42,8 @@ export function AdminAuthDialog() {
     },
   })
   const router = useRouter()
+
+  const [showPassword, setShowPassword] = useState(false)
 
   const onSubmit = async (values: FormValues) => {
     try {
@@ -54,7 +57,15 @@ export function AdminAuthDialog() {
       if (!res.ok) throw new Error(data.error || 'Auth failed')
 
       toast.success(data.message)
-      router.push('/admin/dashboard')
+
+      if (mode === 'sign-up') {
+        // After signup, switch to login mode
+        setMode('login')
+        form.reset()
+      } else {
+        // After login, redirect to dashboard
+        router.push('/admin/dashboard')
+      }
     } catch (error: any) {
       toast.error(error.message)
     }
@@ -101,22 +112,39 @@ export function AdminAuthDialog() {
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input type='password' placeholder='********' {...field} />
+                    <div className='relative'>
+                      <Input
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder='********'
+                        {...field}
+                      />
+                      <button
+                        type='button'
+                        onClick={() => setShowPassword(!showPassword)}
+                        className='absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground'
+                      >
+                        {showPassword ? (
+                          <EyeOff size={18} />
+                        ) : (
+                          <Eye size={18} />
+                        )}
+                      </button>
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <Button type='submit' className='w-full'>
+            <Button type='submit' className='w-full cursor-pointer'>
               {mode === 'login' ? 'Login' : 'Sign Up'}
             </Button>
 
             <Button
               variant='link'
               type='button'
-              onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
-              className='w-full'
+              onClick={() => setMode(mode === 'login' ? 'sign-up' : 'login')}
+              className='w-full cursor-pointer'
             >
               {mode === 'login'
                 ? "Don't have an account? Sign Up"
